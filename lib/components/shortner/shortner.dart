@@ -1,9 +1,10 @@
-import 'dart:convert';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:flutter/services.dart';
-import 'package:http/http.dart' as http;
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'shortener_bloc.dart';
+import 'shortener_event.dart';
+import 'shortener_state.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
 class Shortner extends StatefulWidget {
@@ -14,124 +15,111 @@ class Shortner extends StatefulWidget {
 }
 
 class _ShortnerState extends State<Shortner> {
-  List<Map<String, String>> links = [];
   final TextEditingController _urlController = TextEditingController();
+
+  void copyToClipboard(String link) {
+    Clipboard.setData(ClipboardData(text: link)).then((_) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Link copied to clipboard!')),
+      );
+    });
+  }
+
+  void viewUrl(String url) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => WebViewScreen(url: url)),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
-    void onShorten(link) async {
-      final url = Uri.parse('https://ur-tuki.onrender.com/api/post-link');
-      final response = await http.post(
-        url,
-        headers: {"Content-Type": "application/json"},
-        body: jsonEncode({"link": link}),
-      );
-
-      if (response.statusCode == 200) {
-        setState(() {
-          final responseData = jsonDecode(response.body);
-
-          links.add({
-            "link": link,
-            "shorted_link":
-                "https://ur-tuki.onrender.com/api/get-link/${responseData['message']['shorted_link']}"
-          });
-        });
-      } else {
-        print("Failed to send data");
-      }
-    }
-
-    void copyToClipboard(String link) {
-      Clipboard.setData(ClipboardData(text: link)).then((_) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Link copied to clipboard!')),
-        );
-      });
-    }
-
-    void viewUrl(String url) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (context) => WebViewScreen(url: url)),
-      );
-    }
-
     return Scaffold(
         backgroundColor: const Color(0xFFE5E7EB),
         body: (SafeArea(
-            child: ListView(
-          padding: EdgeInsets.all(50),
-          children: [
-            Stack(
-              children: [
-                Positioned.fill(
-                  child: Container(
-                    color: Color.fromRGBO(59, 48, 84, 1),
-                    child: SvgPicture.asset(
-                      'assets/images/bg-shorten-desktop.svg',
-                      fit: BoxFit.cover,
+            child: ListView(padding: EdgeInsets.all(50), children: [
+          Stack(
+            children: [
+              Positioned.fill(
+                child: Container(
+                  color: Color.fromRGBO(59, 48, 84, 1),
+                  child: SvgPicture.asset(
+                    'assets/images/bg-shorten-desktop.svg',
+                    fit: BoxFit.cover,
+                  ),
+                ),
+              ),
+              Padding(
+                padding: EdgeInsets.symmetric(vertical: 20, horizontal: 50),
+                child: Column(
+                  children: [
+                    TextField(
+                      controller: _urlController,
+                      decoration: InputDecoration(
+                        labelText: "Long Url",
+                        labelStyle:
+                            TextStyle(color: Color.fromARGB(169, 1, 121, 105)),
+                        border: OutlineInputBorder(),
+                        hintText: 'Enter your url',
+                        hintStyle:
+                            TextStyle(color: Color.fromARGB(169, 1, 121, 105)),
+                        filled: true, // Enable filling
+                        fillColor:
+                            Colors.white, // Set background color to white
+                      ),
+                      autofocus: true,
+                      onSubmitted: (_) {
+                        context
+                            .read<ShortenerBloc>()
+                            .add(ShortenUrl(_urlController.text.trim()));
+                      },
                     ),
-                  ),
-                ),
-                Padding(
-                  padding: EdgeInsets.symmetric(vertical: 20, horizontal: 50),
-                  child: Column(
-                    children: [
-                      TextField(
-                        controller: _urlController,
-                        decoration: InputDecoration(
-                          labelText: "Long Url",
-                          labelStyle: TextStyle(
-                              color: Color.fromARGB(169, 1, 121, 105)),
-                          border: OutlineInputBorder(),
-                          hintText: 'Enter your url',
-                          hintStyle: TextStyle(
-                              color: Color.fromARGB(169, 1, 121, 105)),
-                          filled: true, // Enable filling
-                          fillColor:
-                              Colors.white, // Set background color to white
-                        ),
-                        autofocus: true,
-                        onSubmitted: (_) =>
-                            {onShorten(_urlController.text.trim())},
-                      ),
-                      const SizedBox(height: 20),
-                      ElevatedButton(
-                        onPressed: () {
-                          onShorten(_urlController.text.trim());
-                        },
-                        style: ElevatedButton.styleFrom(
-                          minimumSize: Size(1000, 50), // Width and height
-                          backgroundColor: Color.fromARGB(255, 64, 255, 230),
-                          shape: RoundedRectangleBorder(
-                            // Remove default border radius
-                            borderRadius: BorderRadius.zero, // No rounding
-                          ),
-                        ),
-                        child: const Text(
-                          'Shorten it!',
-                          style: TextStyle(color: Colors.white),
+                    const SizedBox(height: 20),
+                    ElevatedButton(
+                      onPressed: () {
+                        context
+                            .read<ShortenerBloc>()
+                            .add(ShortenUrl(_urlController.text.trim()));
+                      },
+                      style: ElevatedButton.styleFrom(
+                        minimumSize: Size(1000, 50), // Width and height
+                        backgroundColor: Color.fromARGB(255, 64, 255, 230),
+                        shape: RoundedRectangleBorder(
+                          // Remove default border radius
+                          borderRadius: BorderRadius.zero, // No rounding
                         ),
                       ),
-                      const SizedBox(
-                        height: 20,
-                      )
-                    ],
-                  ),
+                      child: const Text(
+                        'Shorten it!',
+                        style: TextStyle(color: Colors.white),
+                      ),
+                    ),
+                    const SizedBox(
+                      height: 20,
+                    )
+                  ],
                 ),
-              ],
-            ),
-            const SizedBox(height: 50),
-            // links.isEmpty
-            //     ? SizedBox.shrink()
-            Container(
-                child: ListView.builder(
+              ),
+            ],
+          ),
+          const SizedBox(height: 50),
+          BlocBuilder<ShortenerBloc, ShortenerState>(
+            builder: (context, state) {
+              if (state is ShortenerLoading) {
+                return const Center(child: CircularProgressIndicator());
+              } else if (state is ShortenerFailure) {
+                return Center(
+                    child: Text(state.error,
+                        style: const TextStyle(color: Colors.red)));
+              } else if (state is ShortenerSuccess) {
+                return ListView.builder(
                     shrinkWrap: true, // Ensures it only takes necessary space
                     physics:
                         NeverScrollableScrollPhysics(), // Disables scrolling inside ListView
-                    itemCount: links.length,
+                    itemCount: state.links.length,
                     itemBuilder: (context, index) {
+                      final link = state.links[index];
+
                       return Padding(
                           // Add padding around each item for spacing
                           padding: const EdgeInsets.only(
@@ -148,7 +136,7 @@ class _ShortnerState extends State<Shortner> {
                                 Padding(
                                   padding: EdgeInsets.symmetric(
                                       vertical: 20, horizontal: 10),
-                                  child: Text(links[index]['link']!,
+                                  child: Text(link['link']!,
                                       overflow: TextOverflow
                                           .ellipsis, // Truncates text with "..."
                                       maxLines: 1,
@@ -168,7 +156,7 @@ class _ShortnerState extends State<Shortner> {
                                     padding: EdgeInsets.symmetric(
                                         vertical: 20,
                                         horizontal: 10), // Adds spacing
-                                    child: Text(links[index]['shorted_link']!,
+                                    child: Text(link['shorted_link']!,
                                         style: TextStyle(
                                             color: const Color.fromARGB(
                                                 255, 3, 145, 126)))),
@@ -183,7 +171,7 @@ class _ShortnerState extends State<Shortner> {
                                             child: ElevatedButton(
                                           onPressed: () {
                                             copyToClipboard(
-                                                links[index]['shorted_link']!);
+                                                link['shorted_link']!);
                                           },
                                           style: ElevatedButton.styleFrom(
                                             backgroundColor:
@@ -201,8 +189,7 @@ class _ShortnerState extends State<Shortner> {
                                         Expanded(
                                             child: ElevatedButton(
                                           onPressed: () {
-                                            viewUrl(
-                                                links[index]['shorted_link']!);
+                                            viewUrl(link['shorted_link']!);
                                           },
                                           style: ElevatedButton.styleFrom(
                                             backgroundColor:
@@ -221,9 +208,13 @@ class _ShortnerState extends State<Shortner> {
                               ],
                             ),
                           ));
-                    })),
-          ],
-        ))));
+                    });
+              } else {
+                return const SizedBox.shrink();
+              }
+            },
+          ),
+        ]))));
   }
 }
 

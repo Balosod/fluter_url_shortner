@@ -1,11 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'components/home.dart';
-import 'components/shortner.dart';
+import 'components/shortner/shortner.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'components/shortner/shortener_bloc.dart';
 
 
 void main() {
-  runApp(const MyApp());
+  // runApp(const MyApp());
+   runApp(
+    BlocProvider(
+      create: (context) => ShortenerBloc(),
+      child: const MaterialApp(
+        home: MyApp(),
+      ),
+    ),
+  );
 }
 
 final GoRouter _router = GoRouter(
