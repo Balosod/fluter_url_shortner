@@ -12,7 +12,8 @@ class ShortenerBloc extends Bloc<ShortenerEvent, ShortenerState> {
 
   List<Map<String, String>> links = [];
 
-  Future<void> _onShortenUrl(ShortenUrl event, Emitter<ShortenerState> emit) async {
+  Future<void> _onShortenUrl(
+      ShortenUrl event, Emitter<ShortenerState> emit) async {
     emit(ShortenerLoading());
 
     try {
@@ -25,7 +26,8 @@ class ShortenerBloc extends Bloc<ShortenerEvent, ShortenerState> {
 
       if (response.statusCode == 200) {
         final responseData = jsonDecode(response.body);
-        final shortenedLink = "https://ur-tuki.onrender.com/api/get-link/${responseData['message']['shorted_link']}";
+        final shortenedLink =
+            "https://ur-tuki.onrender.com/api/get-link/${responseData['message']['shorted_link']}";
 
         links.add({"link": event.url, "shorted_link": shortenedLink});
         emit(ShortenerSuccess(List.from(links))); // Emit new state

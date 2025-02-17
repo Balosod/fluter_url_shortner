@@ -37,7 +37,7 @@ class _ShortnerState extends State<Shortner> {
     return Scaffold(
         backgroundColor: const Color(0xFFE5E7EB),
         body: (SafeArea(
-            child: ListView(padding: EdgeInsets.all(50), children: [
+            child: ListView(padding: EdgeInsets.all(20), children: [
           Stack(
             children: [
               Positioned.fill(
@@ -56,7 +56,7 @@ class _ShortnerState extends State<Shortner> {
                     TextField(
                       controller: _urlController,
                       decoration: InputDecoration(
-                        labelText: "Long Url",
+                        // labelText: "Long Url",
                         labelStyle:
                             TextStyle(color: Color.fromARGB(169, 1, 121, 105)),
                         border: OutlineInputBorder(),
@@ -75,25 +75,31 @@ class _ShortnerState extends State<Shortner> {
                       },
                     ),
                     const SizedBox(height: 20),
-                    ElevatedButton(
-                      onPressed: () {
-                        context
-                            .read<ShortenerBloc>()
-                            .add(ShortenUrl(_urlController.text.trim()));
-                      },
-                      style: ElevatedButton.styleFrom(
-                        minimumSize: Size(1000, 50), // Width and height
-                        backgroundColor: Color.fromARGB(255, 64, 255, 230),
-                        shape: RoundedRectangleBorder(
-                          // Remove default border radius
-                          borderRadius: BorderRadius.zero, // No rounding
+                    BlocBuilder<ShortenerBloc, ShortenerState>(
+                        builder: (context, state) {
+                      return ElevatedButton(
+                        onPressed: () {
+                          context
+                              .read<ShortenerBloc>()
+                              .add(ShortenUrl(_urlController.text.trim()));
+                        },
+                        style: ElevatedButton.styleFrom(
+                          minimumSize: Size(1000, 50), // Width and height
+                          backgroundColor: Color.fromARGB(255, 64, 255, 230),
+                          shape: RoundedRectangleBorder(
+                            // Remove default border radius
+                            borderRadius: BorderRadius.zero, // No rounding
+                          ),
                         ),
-                      ),
-                      child: const Text(
-                        'Shorten it!',
-                        style: TextStyle(color: Colors.white),
-                      ),
-                    ),
+                        child: state is ShortenerLoading
+                            ? Padding(padding: EdgeInsets.all(5), child: CircularProgressIndicator(valueColor: AlwaysStoppedAnimation<Color>(
+                                    Colors.white)))
+                            : const Text(
+                                'Shorten It!',
+                                style: TextStyle(color: Colors.white),
+                              ),
+                      );
+                    }),
                     const SizedBox(
                       height: 20,
                     )
@@ -123,7 +129,7 @@ class _ShortnerState extends State<Shortner> {
                       return Padding(
                           // Add padding around each item for spacing
                           padding: const EdgeInsets.only(
-                              bottom: 20), // Space between each item
+                              bottom: 5), // Space between each item
                           child: Container(
                             color: Colors.white,
                             child: Column(
